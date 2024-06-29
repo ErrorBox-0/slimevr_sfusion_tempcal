@@ -25,6 +25,7 @@
 
 #include "../sensor.h"
 #include "../SensorFusionRestDetect.h"
+#include "motionprocessing/GyroTemperatureCalibrator.h"
 
 #include "GlobalVars.h"
 
@@ -36,6 +37,7 @@ class SoftFusionSensor : public Sensor
 {
     using imu = T<I2CImpl>;
     using RawVectorT = std::array<int16_t, 3>;
+    GyroTemperatureCalibrator* gyroTempCalibrator = nullptr;
     static constexpr auto UpsideDownCalibrationInit = true;
     static constexpr auto GyroCalibDelaySeconds = 5;
     static constexpr auto GyroCalibSeconds = 5;
@@ -109,11 +111,34 @@ class SoftFusionSensor : public Sensor
 
     void processGyroSample(const int16_t xyz[3], const sensor_real_t timeDelta)
     {
+
+#if USE_TEMP_CALIBRATION
+        bool restDetected = m_fusion.getRestDetected();
+        gyroTempCalibrator->updateGyroTemperatureCalibration(m_sensor.getDirectTemp(), restDetected, xyz[0], xyz[1], xyz[2]);
+
+        float GOxyz[3];
+        if (gyroTempCalibrator->approximateOffset(m_sensor.getDirectTemp(), GOxyz)) {
+            sensor_real_t _scaledData[3];
+            _scaledData[0] = (sensor_real_t)((((double)xyz[0] - GOxyz[0]) * GScale));
+            _scaledData[1] = (sensor_real_t)((((double)xyz[1] - GOxyz[1]) * GScale));
+            _scaledData[2] = (sensor_real_t)((((double)xyz[2] - GOxyz[2]) * GScale));
+            m_fusion.updateGyro(_scaledData, m_calibration.G_Ts);            
+        }
+        else{
+            sensor_real_t scaledData[3] = {
+            static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[0]) - m_calibration.G_off[0])),
+            static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[1]) - m_calibration.G_off[1])),
+            static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[2]) - m_calibration.G_off[2]))        };
+            m_fusion.updateGyro(scaledData, m_calibration.G_Ts);
+        }
+
+#elif 
         const sensor_real_t scaledData[] = {
             static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[0]) - m_calibration.G_off[0])),
             static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[1]) - m_calibration.G_off[1])),
             static_cast<sensor_real_t>(GScale * (static_cast<sensor_real_t>(xyz[2]) - m_calibration.G_off[2]))};
         m_fusion.updateGyro(scaledData, m_calibration.G_Ts);
+#endif
     }
 
     void eatSamplesForSeconds(const uint32_t seconds) {
@@ -267,6 +292,13 @@ public:
                 ledManager.off();
             }
         }
+
+        gyroTempCalibrator = new GyroTemperatureCalibrator(
+            SlimeVR::Configuration::CalibrationConfigType::SFUSION,
+            sensorId,
+            32.8f,
+            80U
+        );
     }
 
     void startCalibration(int calibrationType) override final

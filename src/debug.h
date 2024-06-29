@@ -93,4 +93,6 @@
 #define FIRMWARE_BUILD_NUMBER 17
 #define FIRMWARE_VERSION "0.4.0"
 
+#define USE_TEMP_CALIBRATION true
+
 #endif // SLIMEVR_DEBUG_H_

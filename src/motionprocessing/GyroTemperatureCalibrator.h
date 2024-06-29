@@ -42,12 +42,12 @@
 
 // Snap calibration to every 1/2 of degree: 20.00, 20.50, 21.00, etc
 // default: 0.5f
-#define TEMP_CALIBRATION_STEP 0.5f
+#define TEMP_CALIBRATION_STEP 3.0f
 
 // Record debug samples if current temperature is off by no more than this value;
 // if snapping point is 20.00 - samples will be recorded in range of 19.80 - 20.20
 // default: 0.2f
-#define TEMP_CALIBRATION_MAX_DEVIATION_FROM_STEP 0.2f
+#define TEMP_CALIBRATION_MAX_DEVIATION_FROM_STEP 0.5f
 
 // How long to average gyro samples for before saving a data point
 // default: 0.2f

@@ -91,8 +91,8 @@ void GyroTemperatureCalibrator::updateGyroTemperatureCalibration(const float tem
     
     if (idx < 0 || idx >= TEMP_CALIBRATION_BUFFER_SIZE) return;
 
-    bool currentTempAlreadyCalibrated = config.samples[idx].t != 0.0f;
-    if (currentTempAlreadyCalibrated) return;
+    // bool currentTempAlreadyCalibrated = config.samples[idx].t != 0.0f;
+    // if (currentTempAlreadyCalibrated) return;
 
     if (state.temperatureCurrentIdx != idx) {
         state.temperatureCurrentIdx = idx;
